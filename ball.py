@@ -89,9 +89,9 @@ class Ball:
                     suspect.clear()
                 for i in sorted(convicted, reverse=True):
                     del speed[i]
-                    for susy in sorted(suspect, reverse=True):
-                        if susy > i:
-                            susy -= 1
+                    for sussy in sorted(suspect, reverse=True):
+                        if sussy > i:
+                            sussy -= 1
 
                 if len(suspect) == 0 and len(speed) >= 2:
                     break
