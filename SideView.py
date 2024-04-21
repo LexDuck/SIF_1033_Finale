@@ -262,14 +262,8 @@ def getHeight(frame:cv.Mat): # retourne deux valeurs pour la grandeur boite
     return top, bot
 
 #Ncap = "devant.mp4"
-Ncap = "Ecote.mp4"
-dictio = detect_side_ball(Ncap)
-print(dictio)
-
+#Ncap = "Ecote.mp4"
+#dictio = detect_side_ball(Ncap)
+#print(dictio)
 #chooseFrame("lol",fct2 = mask_speed)
-
-
-
-
 cv.destroyAllWindows()
-
