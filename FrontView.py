@@ -52,12 +52,12 @@ def detect_front_ball(first:str, second:str):
 
         frame_with_rect = frame.copy()
         # Dessiner le rectangle
-        if baseball_inside_rect(frame, rect_x, rect_y, rect_width, rect_height):
+        if baseball_inside_rect(frame):
             color = (0, 255, 0)  # Vert si dans le rectangle
         else:
             color = (0, 0, 255)  # Rouge si pas dans le rectangle
 
-        cv.rectangle(frame_with_rect, (rect_x, rect_y), (rect_x + rect_width, rect_y + rect_height), color, 2)
+        cv.rectangle(frame_with_rect, (270, 560), (380, 620), color, 2)
 
         # Sauvegarder l'image
         img_path = f"frame_{possible[0]}.png"
@@ -107,27 +107,63 @@ def detect_front_ball(first:str, second:str):
     image_viewer.mainloop()
 
 
-def baseball_inside_rect(frame, rect_x, rect_y, rect_width, rect_height): # Sert à vérifier si la balle est dans la zone de frappe
-    gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+def baseball_inside_rect(frame): # Sert à vérifier si la balle est dans la zone de frappe
+    #gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+    #blurred = cv.GaussianBlur(gray, (11, 11), 0)
+    #_, thresh = cv.threshold(blurred, 50, 255, cv.THRESH_BINARY)
+    #kernel = np.ones((5, 5), np.uint8)
+    #closed = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel)
+    #contours, _ = cv.findContours(closed, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    #cv.drawContours(frame, contours, -1, (0, 255, 0), 2)
 
-    blurred = cv.GaussianBlur(gray, (11, 11), 0)
+    areas_to_ignore = [  # Define multiple areas to ignore as percentages of the frame dimensions
+        {'left': 0.0, 'top': 0.0, 'right': 0.3, 'bottom': 1.0},
+        {'left': 0.0, 'top': 0.0, 'right': 1.0, 'bottom': 0.10},
+        {'left': 0.0, 'top': 0.0, 'right': 0.5, 'bottom': 0.20},
+        {'left': 0.0, 'top': 0.85, 'right': 1.0, 'bottom': 1.0},
+    # Add more areas as needed
+    ]
+    
+    mask = mask_out_areas(frame, areas_to_ignore)
+    masked_frame = cv.bitwise_and(frame, frame, mask=mask)
+    gray_roi = cv.cvtColor(masked_frame, cv.COLOR_BGR2GRAY)
 
-    _, thresh = cv.threshold(blurred, 50, 255, cv.THRESH_BINARY)
+    blur_roi = cv.GaussianBlur(gray_roi, (9, 9), 0)
+    edges_roi = cv.Canny(blur_roi, 30, 150)
+    dilated_roi = cv.dilate(edges_roi, None, iterations=2)
+    eroded_roi = cv.erode(dilated_roi, None, iterations=1)
 
-    kernel = np.ones((5, 5), np.uint8)
-    closed = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel)
-
-    contours, _ = cv.findContours(closed, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-
-    cv.drawContours(frame, contours, -1, (0, 255, 0), 2)
+    # Find contours in the ROI
+    contours, _ = cv.findContours(eroded_roi, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
     for contour in contours:
+        perimeter = cv.arcLength(contour, True)
+        area = cv.contourArea(contour)
+        if perimeter == 0:
+            continue
+        circularity = 4 * np.pi * (area / (perimeter * perimeter))
+        ((x, y), radius) = cv.minEnclosingCircle(contour)
+        
+        if 450 > area > 20 > radius > 2 and circularity > 0.65:
+            x, y = int(x), int(y)
+            cv.circle(frame, (x, y), int(radius), (0, 255, 0), 2)
+            cv.circle(frame, (x, y), 2, (0, 0, 255), -1)
+        
         x, y, w, h = cv.boundingRect(contour)
         
         center_x = x + w // 2
         center_y = y + h // 2
         
-        if rect_x <= center_x <= rect_x + rect_width and rect_y <= center_y <= rect_y + rect_height:
+        if 270 <= center_x <= 380 and 560 <= center_y <= 620:
             return True
 
     return False
+
+def mask_out_areas(frame, areas_to_ignore):
+    """Create a mask that blocks out specified areas in the frame."""
+    mask = np.ones(frame.shape[:2], dtype='uint8') * 255
+    for area in areas_to_ignore:
+        top_left = (int(area['left'] * frame.shape[1]), int(area['top'] * frame.shape[0]))
+        bottom_right = (int(area['right'] * frame.shape[1]), int(area['bottom'] * frame.shape[0]))
+        cv.rectangle(mask, top_left, bottom_right, 0, thickness=-1)
+    return mask

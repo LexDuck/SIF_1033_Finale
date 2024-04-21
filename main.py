@@ -11,8 +11,8 @@ def load_first_video(): #Permet à l'utilisateur de choisir la première vidéo,
     file_path = filedialog.askopenfilename()
     if file_path:
         FIRST_VIDEO_PATH = file_path
-    if FIRST_VIDEO_PATH & SECOND_VIDEO_PATH:
-        buttonStart.config(state="normal")
+        if SECOND_VIDEO_PATH:
+            buttonStart.config(state="normal")
     
         
 def load_second_video(): #Permet à l'utilisateur de choisir la deuxième vidéo, dans notre cas la vue de face
@@ -20,12 +20,12 @@ def load_second_video(): #Permet à l'utilisateur de choisir la deuxième vidéo
     file_path = filedialog.askopenfilename()
     if file_path:
         SECOND_VIDEO_PATH = file_path
-    if SECOND_VIDEO_PATH and FIRST_VIDEO_PATH:
-        buttonStart.config(state="normal")
+        if FIRST_VIDEO_PATH:
+            buttonStart.config(state="normal")
+        
         
 def main():
     detect_front_ball(FIRST_VIDEO_PATH, SECOND_VIDEO_PATH)
-    buttonStart.config(state="disabled")
 
 root = tk.Tk()  #Instance principale pour l'interface
 root.title("SIF1033 - Phase 2")
